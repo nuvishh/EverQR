@@ -182,6 +182,11 @@ footer a { color: #a5f3fc; text-decoration: none; }
     <div class="card preview-card">
       <h2><span class="n">3</span> Preview & Download</h2>
       <div class="qrbox" id="qrbox"><canvas id="qr-canvas"></canvas></div>
+      <div class="field" style="text-align:left;margin-bottom:0.8rem">
+        <label>File name</label>
+        <input id="in-fname" value="everqr" placeholder="everqr" maxlength="60"
+          style="width:100%;padding:0.7rem 0.9rem;border-radius:10px;border:1px solid var(--border);background:rgba(0,0,0,0.25);color:var(--text);font-size:0.92rem;font-family:inherit">
+      </div>
       <div class="btns">
         <button class="btn primary" id="dl-png">⬇ PNG</button>
         <button class="btn ghost" id="dl-svg">⬇ SVG</button>
@@ -381,17 +386,21 @@ function dl(url, name) {
   const a = document.createElement('a');
   a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
 }
+function fname(ext) {
+  const v = ($('in-fname').value || 'everqr').trim().replace(/[^a-zA-Z0-9-_ ]/g, '').replace(/\s+/g, '-').slice(0, 60);
+  return (v || 'everqr') + ext;
+}
 $('dl-png').onclick = () => {
   if (!payload()) return;
   $('qr-canvas').toBlob(b => {
     const url = URL.createObjectURL(b);
-    dl(url, 'everqr.png'); setTimeout(() => URL.revokeObjectURL(url), 5000);
+    dl(url, fname('.png')); setTimeout(() => URL.revokeObjectURL(url), 5000);
   }, 'image/png');
 };
 $('dl-svg').onclick = () => {
   const svg = toSVG(); if (!svg) return;
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
-  dl(url, 'everqr.svg'); setTimeout(() => URL.revokeObjectURL(url), 5000);
+  dl(url, fname('.svg')); setTimeout(() => URL.revokeObjectURL(url), 5000);
 };
 $('cp-png').onclick = async () => {
   if (!payload()) return;
