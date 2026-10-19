@@ -105,6 +105,9 @@ footer a { color: #fecaca; text-decoration: none; }
           <button class="tab" data-t="email">✉️ Email</button>
           <button class="tab" data-t="phone">📞 Phone</button>
           <button class="tab" data-t="sms">💬 SMS</button>
+          <button class="tab" data-t="upi">💸 UPI</button>
+          <button class="tab" data-t="event">📅 Event</button>
+          <button class="tab" data-t="geo">📍 Location</button>
         </div>
         <div id="pane-text">
           <div class="field"><label>URL or any text</label>
@@ -148,6 +151,34 @@ footer a { color: #fecaca; text-decoration: none; }
             <div class="field"><label>Message</label><input id="in-smsg" placeholder="Hi!"></div>
           </div>
         </div>
+        <div id="pane-upi" class="hidden">
+          <div class="row2">
+            <div class="field"><label>UPI ID (VPA)</label><input id="in-upa" placeholder="name@okhdfcbank"></div>
+            <div class="field"><label>Payee name</label><input id="in-upn" placeholder="Vishnu N"></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>Amount ₹ (optional)</label><input id="in-uam" type="number" min="1" step="0.01" placeholder="100"></div>
+            <div class="field"><label>Note (optional)</label><input id="in-utn" placeholder="Thanks!"></div>
+          </div>
+        </div>
+        <div id="pane-event" class="hidden">
+          <div class="field"><label>Event title</label><input id="in-evtitle" placeholder="Birthday Party"></div>
+          <div class="row2">
+            <div class="field"><label>Start</label><input id="in-evstart" type="datetime-local"></div>
+            <div class="field"><label>End</label><input id="in-evend" type="datetime-local"></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>Location</label><input id="in-evloc" placeholder="Kannur"></div>
+            <div class="field"><label>Description</label><input id="in-evdesc" placeholder="Join us!"></div>
+          </div>
+        </div>
+        <div id="pane-geo" class="hidden">
+          <div class="row2">
+            <div class="field"><label>Latitude</label><input id="in-glat" type="number" step="any" placeholder="11.8745"></div>
+            <div class="field"><label>Longitude</label><input id="in-glng" type="number" step="any" placeholder="75.3555"></div>
+          </div>
+          <p class="note" style="margin-top:0">💡 Tip: Google Maps-il oru place right-click cheythal coordinates kittum.</p>
+        </div>
       </div>
 
       <div class="card">
@@ -157,6 +188,15 @@ footer a { color: #fecaca; text-decoration: none; }
             <div class="colorrow"><input type="color" id="in-fg" value="#0f0c29"><span id="fg-hex">#0f0c29</span></div></div>
           <div class="field"><label>Background</label>
             <div class="colorrow"><input type="color" id="in-bg" value="#ffffff"><span id="bg-hex">#ffffff</span></div></div>
+        </div>
+        <div class="row2" style="margin-bottom:0.9rem">
+          <div class="field"><label>&nbsp;</label>
+            <div class="checkrow"><input type="checkbox" id="in-grad"> Gradient QR (two colors)</div></div>
+          <div class="field"><label>Second color</label>
+            <div class="colorrow"><input type="color" id="in-fg2" value="#dc2626"><span id="fg2-hex">#dc2626</span></div></div>
+        </div>
+        <div class="field" style="margin-bottom:0.9rem">
+          <div class="checkrow"><input type="checkbox" id="in-transparent"> Transparent background <span style="opacity:.6">(PNG download only)</span></div>
         </div>
         <div class="field"><label>Module style</label>
           <div class="stylebtns" id="stylebtns">
@@ -213,7 +253,7 @@ $('tabs').addEventListener('click', e => {
   const b = e.target.closest('.tab'); if (!b) return;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   b.classList.add('active'); curTab = b.dataset.t;
-  ['text','wifi','vcard','email','phone','sms'].forEach(t =>
+  ['text','wifi','vcard','email','phone','sms','upi','event','geo'].forEach(t =>
     $('pane-' + t).classList.toggle('hidden', t !== curTab));
   render();
 });
@@ -241,10 +281,14 @@ $('in-logo').addEventListener('change', e => {
 // ---- live updates ----
 ['in-text','in-ssid','in-wpass','in-wsec','in-whidden','in-vname','in-vphone','in-vemail','in-vorg',
  'in-eaddr','in-esub','in-ebody','in-pnum','in-snum','in-smsg',
- 'in-fg','in-bg','in-size','in-ec','in-margin','in-logosize'].forEach(id => {
+ 'in-upa','in-upn','in-uam','in-utn',
+ 'in-evtitle','in-evstart','in-evend','in-evloc','in-evdesc',
+ 'in-glat','in-glng',
+ 'in-fg','in-fg2','in-grad','in-bg','in-transparent','in-size','in-ec','in-margin','in-logosize'].forEach(id => {
   const el = $(id); if (!el) return;
   el.addEventListener('input', () => {
     if (id === 'in-fg') $('fg-hex').textContent = el.value;
+    if (id === 'in-fg2') $('fg2-hex').textContent = el.value;
     if (id === 'in-bg') $('bg-hex').textContent = el.value;
     if (id === 'in-logosize') $('logosize-val').textContent = el.value + '%';
     render();
@@ -285,6 +329,38 @@ function payload() {
       const m = $('in-smsg').value.trim();
       return 'smsto:' + n.replace(/[\s-]/g, '') + (m ? ':' + m : '');
     }
+    case 'upi': {
+      const pa = $('in-upa').value.trim(); if (!pa) return '';
+      const pn = $('in-upn').value.trim(), am = $('in-uam').value.trim(), tn = $('in-utn').value.trim();
+      let u = 'upi://pay?pa=' + encodeURIComponent(pa) + '&cu=INR';
+      if (pn) u += '&pn=' + encodeURIComponent(pn);
+      if (am) u += '&am=' + encodeURIComponent(parseFloat(am));
+      if (tn) u += '&tn=' + encodeURIComponent(tn);
+      return u;
+    }
+    case 'event': {
+      const t = $('in-evtitle').value.trim(); if (!t) return '';
+      const fmtDT = v => {
+        if (!v) return '';
+        const d = new Date(v);
+        const p = n => String(n).padStart(2, '0');
+        return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + 'T' +
+               p(d.getHours()) + p(d.getMinutes()) + '00';
+      };
+      const lines = ['BEGIN:VEVENT', 'SUMMARY:' + t];
+      const ds = fmtDT($('in-evstart').value), de = fmtDT($('in-evend').value);
+      if (ds) lines.push('DTSTART:' + ds);
+      if (de) lines.push('DTEND:' + de);
+      if ($('in-evloc').value.trim()) lines.push('LOCATION:' + $('in-evloc').value.trim());
+      if ($('in-evdesc').value.trim()) lines.push('DESCRIPTION:' + $('in-evdesc').value.trim());
+      lines.push('END:VEVENT');
+      return lines.join('\n');
+    }
+    case 'geo': {
+      const lat = $('in-glat').value.trim(), lng = $('in-glng').value.trim();
+      if (!lat || !lng) return '';
+      return 'geo:' + lat + ',' + lng;
+    }
     default: return $('in-text').value;
   }
 }
@@ -303,11 +379,13 @@ function render() {
   const canvas = $('qr-canvas');
   const ctx = canvas.getContext('2d');
   const size = parseInt($('in-size').value, 10);
-  const fg = $('in-fg').value, bg = $('in-bg').value;
+  const fg = $('in-fg').value, fg2 = $('in-fg2').value, useGrad = $('in-grad').checked;
+  const bg = $('in-bg').value, transparent = $('in-transparent').checked;
   const margin = parseInt($('in-margin').value, 10);
   if (!text) {
     canvas.width = canvas.height = size;
-    ctx.fillStyle = bg; ctx.fillRect(0, 0, size, size);
+    ctx.clearRect(0, 0, size, size);
+    if (!transparent) { ctx.fillStyle = bg; ctx.fillRect(0, 0, size, size); }
     ctx.fillStyle = '#94a3b8'; ctx.font = '24px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('Enter content to generate', size / 2, size / 2);
     return;
@@ -316,7 +394,8 @@ function render() {
   try { qr = buildQR(text); }
   catch (e) {
     canvas.width = canvas.height = size;
-    ctx.fillStyle = bg; ctx.fillRect(0, 0, size, size);
+    ctx.clearRect(0, 0, size, size);
+    if (!transparent) { ctx.fillStyle = bg; ctx.fillRect(0, 0, size, size); }
     ctx.fillStyle = '#ef4444'; ctx.font = '22px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('Too much data — shorten it', size / 2, size / 2);
     return;
@@ -325,8 +404,15 @@ function render() {
   const total = count + margin * 2;
   const scale = size / total;
   canvas.width = canvas.height = size;
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, size, size);
-  ctx.fillStyle = fg;
+  ctx.clearRect(0, 0, size, size);
+  if (!transparent) { ctx.fillStyle = bg; ctx.fillRect(0, 0, size, size); }
+  if (useGrad) {
+    const g = ctx.createLinearGradient(0, 0, size, size);
+    g.addColorStop(0, fg); g.addColorStop(1, fg2);
+    ctx.fillStyle = g;
+  } else {
+    ctx.fillStyle = fg;
+  }
   const inFinder = (r, c) =>
     (r < 8 && c < 8) || (r < 8 && c >= count - 8) || (r >= count - 8 && c < 8);
   for (let r = 0; r < count; r++) {
@@ -352,10 +438,12 @@ function render() {
     const pct = parseInt($('in-logosize').value, 10) / 100;
     const lw = size * pct, lh = lw * (logoImg.height / logoImg.width);
     const pad = lw * 0.12;
-    ctx.fillStyle = bg;
-    const bx = size / 2 - lw / 2 - pad, by = size / 2 - lh / 2 - pad;
-    ctx.beginPath(); ctx.roundRect(bx, by, lw + pad * 2, lh + pad * 2, pad);
-    ctx.fill();
+    if (!transparent) {
+      ctx.fillStyle = bg;
+      const bx = size / 2 - lw / 2 - pad, by = size / 2 - lh / 2 - pad;
+      ctx.beginPath(); ctx.roundRect(bx, by, lw + pad * 2, lh + pad * 2, pad);
+      ctx.fill();
+    }
     ctx.drawImage(logoImg, size / 2 - lw / 2, size / 2 - lh / 2, lw, lh);
   }
 }
@@ -366,21 +454,31 @@ function toSVG() {
   let qr; try { qr = buildQR(text); } catch (e) { return null; }
   const count = qr.getModuleCount();
   const margin = parseInt($('in-margin').value, 10);
-  const fg = $('in-fg').value, bg = $('in-bg').value;
+  const fg = $('in-fg').value, fg2 = $('in-fg2').value, useGrad = $('in-grad').checked;
+  const bg = $('in-bg').value, transparent = $('in-transparent').checked;
   const total = count + margin * 2, S = 1000, u = S / total;
   let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}">`;
-  s += `<rect width="${S}" height="${S}" fill="${bg}"/>`;
+  if (!transparent) s += `<rect width="${S}" height="${S}" fill="${bg}"/>`;
+  let fillAttr;
+  if (useGrad) {
+    s += `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">` +
+         `<stop offset="0" stop-color="${fg}"/><stop offset="1" stop-color="${fg2}"/>` +
+         `</linearGradient></defs>`;
+    fillAttr = 'fill="url(#g)"';
+  } else {
+    fillAttr = `fill="${fg}"`;
+  }
   const inFinder = (r, c) =>
     (r < 8 && c < 8) || (r < 8 && c >= count - 8) || (r >= count - 8 && c < 8);
   for (let r = 0; r < count; r++) for (let c = 0; c < count; c++) {
     if (!qr.isDark(r, c)) continue;
     const x = ((c + margin) * u).toFixed(2), y = ((r + margin) * u).toFixed(2), w = u.toFixed(2);
     if (curStyle === 'dots' && !inFinder(r, c))
-      s += `<circle cx="${(+x + u / 2).toFixed(2)}" cy="${(+y + u / 2).toFixed(2)}" r="${(u * 0.46).toFixed(2)}" fill="${fg}"/>`;
+      s += `<circle cx="${(+x + u / 2).toFixed(2)}" cy="${(+y + u / 2).toFixed(2)}" r="${(u * 0.46).toFixed(2)}" ${fillAttr}/>`;
     else if (curStyle === 'rounded')
-      s += `<rect x="${x}" y="${y}" width="${w}" height="${w}" rx="${(u * 0.28).toFixed(2)}" fill="${fg}"/>`;
+      s += `<rect x="${x}" y="${y}" width="${w}" height="${w}" rx="${(u * 0.28).toFixed(2)}" ${fillAttr}/>`;
     else
-      s += `<rect x="${x}" y="${y}" width="${w}" height="${w}" fill="${fg}"/>`;
+      s += `<rect x="${x}" y="${y}" width="${w}" height="${w}" ${fillAttr}/>`;
   }
   return s + '</svg>';
 }
