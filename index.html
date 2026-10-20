@@ -63,7 +63,7 @@ input[type="range"] { flex: 1; accent-color: var(--accent1); }
 .stylebtns { display: flex; gap: 0.5rem; }
 .stylebtn { flex: 1; padding: 0.6rem 0.3rem; border-radius: 10px; border: 1px solid var(--border);
   background: transparent; color: var(--muted); cursor: pointer; font-size: 0.8rem; }
-.stylebtn.active { border-color: var(--accent1); color: #fff; background: rgba(124,58,237,0.2); }
+.stylebtn.active { border-color: var(--accent1); color: #fff; background: rgba(220,38,38,0.18); }
 .drop { border: 2px dashed var(--border); border-radius: 12px; padding: 1.1rem;
   text-align: center; cursor: pointer; color: var(--muted); font-size: 0.85rem; transition: all 0.2s; }
 .drop:hover { border-color: var(--accent1); color: var(--text); }
@@ -214,6 +214,24 @@ footer a { color: #fecaca; text-decoration: none; }
             <button class="stylebtn" data-s="dots">⚫ Dots</button>
           </div>
         </div>
+        <div class="row2" style="margin-bottom:0.9rem">
+          <div class="field"><label>Eye style</label>
+            <div class="stylebtns" id="eyebtns">
+              <button class="stylebtn active" data-e="square">⬛</button>
+              <button class="stylebtn" data-e="rounded">🟦</button>
+              <button class="stylebtn" data-e="circle">⭕</button>
+              <button class="stylebtn" data-e="leaf">🍃</button>
+            </div>
+          </div>
+          <div class="field"><label>Frame</label>
+            <select id="in-frame" style="width:100%;padding:0.6rem;border-radius:10px;border:1px solid var(--border);background:rgba(0,0,0,0.25);color:var(--text);font-family:inherit">
+              <option value="none" selected>None</option>
+              <option value="card">Card — “SCAN ME” below</option>
+              <option value="bubble">Bubble — label on top</option>
+              <option value="tag">Tag — ribbon on top</option>
+            </select>
+          </div>
+        </div>
         <div class="row3">
           <div class="field"><label>Size</label>
             <select id="in-size"><option value="512">512 px</option><option value="1024" selected>1024 px</option><option value="2048">2048 px</option></select></div>
@@ -243,6 +261,7 @@ footer a { color: #fecaca; text-decoration: none; }
       <div class="btns">
         <button class="btn primary" id="dl-png">⬇ Download PNG</button>
         <button class="btn ghost" id="dl-svg">⬇ Download SVG</button>
+        <button class="btn ghost" id="dl-pdf">⬇ Download PDF</button>
         <button class="btn ghost" id="cp-png">📋 Copy Image</button>
       </div>
       <p class="note">✨ <strong>Static QR</strong> — your content is encoded directly into the image. No servers, no accounts, no expiry. Ever.</p>
@@ -263,7 +282,7 @@ footer a { color: #fecaca; text-decoration: none; }
 <script src="qrcode.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-let curTab = 'text', curStyle = 'square', logoImg = null;
+let curTab = 'text', curStyle = 'square', curEye = 'square', logoImg = null;
 
 // ---- tabs ----
 $('tabs').addEventListener('click', e => {
@@ -277,8 +296,13 @@ $('tabs').addEventListener('click', e => {
 // ---- style buttons ----
 $('stylebtns').addEventListener('click', e => {
   const b = e.target.closest('.stylebtn'); if (!b) return;
-  document.querySelectorAll('.stylebtn').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#stylebtns .stylebtn').forEach(t => t.classList.remove('active'));
   b.classList.add('active'); curStyle = b.dataset.s; render();
+});
+$('eyebtns').addEventListener('click', e => {
+  const b = e.target.closest('.stylebtn'); if (!b) return;
+  document.querySelectorAll('#eyebtns .stylebtn').forEach(t => t.classList.remove('active'));
+  b.classList.add('active'); curEye = b.dataset.e; render();
 });
 // ---- logo ----
 $('drop').addEventListener('click', () => $('in-logo').click());
@@ -301,7 +325,7 @@ $('in-logo').addEventListener('change', e => {
  'in-upa','in-upn','in-uam','in-utn',
  'in-evtitle','in-evstart','in-evend','in-evloc','in-evdesc',
  'in-glat','in-glng',
- 'in-fg','in-fg2','in-grad','in-bg','in-transparent','in-size','in-ec','in-margin','in-logosize'].forEach(id => {
+ 'in-fg','in-fg2','in-grad','in-bg','in-transparent','in-size','in-ec','in-margin','in-frame','in-logosize'].forEach(id => {
   const el = $(id); if (!el) return;
   el.addEventListener('input', () => {
     if (id === 'in-fg') $('fg-hex').textContent = el.value;
@@ -391,71 +415,111 @@ function buildQR(text) {
   qr.make();
   return qr;
 }
-function render() {
+// ---- QR base drawing (modules + eyes + logo, no frame) ----
+const inEye = (r, c, n) =>
+  (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+
+function drawEye(ctx, px, py, sc, style, fgFill, bgFill) {
+  const S = 7 * sc, s = sc;
+  const path2d = (inset, units) => {
+    const x = px + inset, y = py + inset, w = units * sc, r = w * 0.24;
+    const p = new Path2D();
+    if (style === 'leaf') {
+      p.moveTo(x, y); p.lineTo(x + w - r, y); p.arcTo(x + w, y, x + w, y + r, r);
+      p.lineTo(x + w, y + w); p.lineTo(x + r, y + w); p.arcTo(x, y + w, x, y + w - r, r);
+      p.lineTo(x, y); p.closePath();
+    } else p.roundRect(x, y, w, w, r);
+    return p;
+  };
+  ctx.fillStyle = fgFill;
+  if (style === 'circle') {
+    ctx.beginPath(); ctx.arc(px + S / 2, py + S / 2, S / 2, 0, Math.PI * 2); ctx.fill();
+  } else if (style === 'square') {
+    ctx.fillRect(px, py, S, S);
+  } else {
+    ctx.fill(path2d(0, 7));
+  }
+  if (bgFill !== null) {
+    ctx.fillStyle = bgFill;
+    if (style === 'circle') {
+      ctx.beginPath(); ctx.arc(px + S / 2, py + S / 2, 2.5 * s, 0, Math.PI * 2); ctx.fill();
+    } else if (style === 'square') {
+      ctx.fillRect(px + s, py + s, 5 * s, 5 * s);
+    } else {
+      ctx.fill(path2d(s, 5));
+    }
+  }
+  ctx.fillStyle = fgFill;
+  if (style === 'circle') {
+    ctx.beginPath(); ctx.arc(px + S / 2, py + S / 2, 1.5 * s, 0, Math.PI * 2); ctx.fill();
+  } else if (style === 'square') {
+    ctx.fillRect(px + 2 * s, py + 2 * s, 3 * s, 3 * s);
+  } else {
+    ctx.fill(path2d(2 * s, 3));
+  }
+}
+
+// Draws the QR (bg, modules, eyes, logo) into ctx at the given pixel size. Returns false on error/empty.
+function drawQRBase(ctx, size) {
   const text = payload();
-  const canvas = $('qr-canvas');
-  const ctx = canvas.getContext('2d');
-  const size = parseInt($('in-size').value, 10);
   const fg = $('in-fg').value, fg2 = $('in-fg2').value, useGrad = $('in-grad').checked;
   const bg = $('in-bg').value, transparent = $('in-transparent').checked;
   const margin = parseInt($('in-margin').value, 10);
+  const frame = $('in-frame').value;
+  const transp = transparent && frame === 'none';
+  ctx.clearRect(0, 0, size, size);
+  if (!transp) { ctx.fillStyle = bg; ctx.fillRect(0, 0, size, size); }
   if (!text) {
-    canvas.width = canvas.height = size;
-    ctx.clearRect(0, 0, size, size);
-    if (!transparent) { ctx.fillStyle = bg; ctx.fillRect(0, 0, size, size); }
     ctx.fillStyle = '#94a3b8'; ctx.font = '24px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('Enter content to generate', size / 2, size / 2);
-    return;
+    return false;
   }
   let qr;
   try { qr = buildQR(text); }
   catch (e) {
-    canvas.width = canvas.height = size;
-    ctx.clearRect(0, 0, size, size);
-    if (!transparent) { ctx.fillStyle = bg; ctx.fillRect(0, 0, size, size); }
     ctx.fillStyle = '#ef4444'; ctx.font = '22px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('Too much data — shorten it', size / 2, size / 2);
-    return;
+    return false;
   }
   const count = qr.getModuleCount();
   const total = count + margin * 2;
   const scale = size / total;
-  canvas.width = canvas.height = size;
-  ctx.clearRect(0, 0, size, size);
-  if (!transparent) { ctx.fillStyle = bg; ctx.fillRect(0, 0, size, size); }
+  const offset = margin * scale;
+  let fgFill = fg;
   if (useGrad) {
     const g = ctx.createLinearGradient(0, 0, size, size);
     g.addColorStop(0, fg); g.addColorStop(1, fg2);
-    ctx.fillStyle = g;
-  } else {
-    ctx.fillStyle = fg;
+    fgFill = g;
   }
-  const inFinder = (r, c) =>
-    (r < 8 && c < 8) || (r < 8 && c >= count - 8) || (r >= count - 8 && c < 8);
+  ctx.fillStyle = fgFill;
   for (let r = 0; r < count; r++) {
     for (let c = 0; c < count; c++) {
-      if (!qr.isDark(r, c)) continue;
+      if (!qr.isDark(r, c) || inEye(r, c, count)) continue;
       const x = (c + margin) * scale, y = (r + margin) * scale;
-      if (curStyle === 'dots' && !inFinder(r, c)) {
+      if (curStyle === 'dots') {
         ctx.beginPath();
         ctx.arc(x + scale / 2, y + scale / 2, scale * 0.46, 0, Math.PI * 2);
         ctx.fill();
       } else if (curStyle === 'rounded') {
-        const rad = scale * 0.28;
         ctx.beginPath();
-        ctx.roundRect(x + scale * 0.06, y + scale * 0.06, scale * 0.88, scale * 0.88, rad);
+        ctx.roundRect(x + scale * 0.06, y + scale * 0.06, scale * 0.88, scale * 0.88, scale * 0.28);
         ctx.fill();
       } else {
         ctx.fillRect(x, y, scale, scale);
       }
     }
   }
+  // eyes (finder patterns) with shape styles
+  const bgFill = transp ? null : bg;
+  drawEye(ctx, offset, offset, scale, curEye, fgFill, bgFill);
+  drawEye(ctx, offset + (count - 7) * scale, offset, scale, curEye, fgFill, bgFill);
+  drawEye(ctx, offset, offset + (count - 7) * scale, scale, curEye, fgFill, bgFill);
   // logo overlay
   if (logoImg) {
     const pct = parseInt($('in-logosize').value, 10) / 100;
     const lw = size * pct, lh = lw * (logoImg.height / logoImg.width);
     const pad = lw * 0.12;
-    if (!transparent) {
+    if (!transp) {
       ctx.fillStyle = bg;
       const bx = size / 2 - lw / 2 - pad, by = size / 2 - lh / 2 - pad;
       ctx.beginPath(); ctx.roundRect(bx, by, lw + pad * 2, lh + pad * 2, pad);
@@ -463,19 +527,100 @@ function render() {
     }
     ctx.drawImage(logoImg, size / 2 - lw / 2, size / 2 - lh / 2, lw, lh);
   }
+  return true;
+}
+
+function render() {
+  const canvas = $('qr-canvas');
+  const size = parseInt($('in-size').value, 10);
+  const frame = $('in-frame').value;
+  const fg = $('in-fg').value, bg = $('in-bg').value;
+  const base = document.createElement('canvas');
+  base.width = base.height = size;
+  drawQRBase(base.getContext('2d'), size);
+  const label = 'SCAN ME';
+  if (frame === 'none') {
+    canvas.width = canvas.height = size;
+    canvas.getContext('2d').drawImage(base, 0, 0);
+    return;
+  }
+  const pad = Math.round(size * 0.055);
+  const labelH = Math.round(size * 0.15);
+  const tagH = Math.round(labelH * 0.8);
+  const W = size + pad * 2;
+  const H = frame === 'card' ? size + pad * 2 + labelH
+          : frame === 'tag' ? size + pad * 2 + tagH
+          : size + pad * 2;
+  canvas.width = W; canvas.height = H;
+  const c = canvas.getContext('2d');
+  c.fillStyle = bg;
+  c.beginPath(); c.roundRect(0, 0, W, H, size * 0.045); c.fill();
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  if (frame === 'card') {
+    c.drawImage(base, pad, pad);
+    c.fillStyle = fg;
+    c.font = '700 ' + Math.round(size * 0.075) + 'px "Segoe UI", sans-serif';
+    c.fillText(label, W / 2, pad + size + labelH * 0.62);
+  } else if (frame === 'tag') {
+    c.drawImage(base, pad, pad + tagH);
+    c.fillStyle = fg;
+    c.beginPath(); c.roundRect(0, 0, W, tagH, [size * 0.045, size * 0.045, 0, 0]); c.fill();
+    c.fillStyle = bg;
+    c.font = '700 ' + Math.round(size * 0.055) + 'px "Segoe UI", sans-serif';
+    c.fillText(label, W / 2, tagH / 2);
+  } else if (frame === 'bubble') {
+    c.drawImage(base, pad, pad);
+    const fs = Math.round(size * 0.062);
+    c.font = '700 ' + fs + 'px "Segoe UI", sans-serif';
+    const tw = c.measureText(label).width + fs * 1.8;
+    const tx = (W - tw) / 2;
+    c.fillStyle = fg;
+    c.beginPath(); c.roundRect(tx, -fs * 0.2, tw, fs * 1.9, fs * 0.95); c.fill();
+    c.fillStyle = bg;
+    c.fillText(label, W / 2, fs * 0.72);
+  }
 }
 
 // ---- SVG export ----
-function toSVG() {
+// SVG path for a leaf shape in a units-square at (x,y) with unit u
+function leafPath(x, y, units, u) {
+  const w = units * u, r = w * 0.24;
+  const f = v => v.toFixed(2);
+  return `M ${f(x)} ${f(y)} L ${f(x + w - r)} ${f(y)} A ${f(r)} ${f(r)} 0 0 1 ${f(x + w)} ${f(y + r)} L ${f(x + w)} ${f(y + w)} L ${f(x + r)} ${f(y + w)} A ${f(r)} ${f(r)} 0 0 1 ${f(x)} ${f(y + w - r)} Z`;
+}
+function svgEye(px, py, u, fillAttr, bgFill) {
+  const f = v => v.toFixed(2);
+  let s = '';
+  const shape = (inset, units, fill) => {
+    const x = px + inset * u, y = py + inset * u, w = units * u, r = w * 0.24;
+    if (curEye === 'circle')
+      return `<circle cx="${f(px + 3.5 * u)}" cy="${f(py + 3.5 * u)}" r="${f(units * u / 2)}" ${fill}/>`;
+    if (curEye === 'square')
+      return `<rect x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(w)}" ${fill}/>`;
+    if (curEye === 'leaf')
+      return `<path d="${leafPath(x, y, units, u)}" ${fill}/>`;
+    return `<rect x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(w)}" rx="${f(r)}" ${fill}/>`;
+  };
+  s += shape(0, 7, fillAttr);
+  if (bgFill !== null) s += shape(1, 5, `fill="${bgFill}"`);
+  s += shape(2, 3, fillAttr);
+  return s;
+}
+
+// QR-only inner SVG (viewBox 0 0 S S content, without outer <svg> tag)
+function qrSVGInner(S) {
   const text = payload(); if (!text) return null;
   let qr; try { qr = buildQR(text); } catch (e) { return null; }
   const count = qr.getModuleCount();
   const margin = parseInt($('in-margin').value, 10);
   const fg = $('in-fg').value, fg2 = $('in-fg2').value, useGrad = $('in-grad').checked;
   const bg = $('in-bg').value, transparent = $('in-transparent').checked;
-  const total = count + margin * 2, S = 1000, u = S / total;
-  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}">`;
-  if (!transparent) s += `<rect width="${S}" height="${S}" fill="${bg}"/>`;
+  const frame = $('in-frame').value;
+  const transp = transparent && frame === 'none';
+  const total = count + margin * 2, u = S / total;
+  const off = margin * u;
+  let s = '';
+  if (!transp) s += `<rect width="${S}" height="${S}" fill="${bg}"/>`;
   let fillAttr;
   if (useGrad) {
     s += `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">` +
@@ -485,17 +630,48 @@ function toSVG() {
   } else {
     fillAttr = `fill="${fg}"`;
   }
-  const inFinder = (r, c) =>
-    (r < 8 && c < 8) || (r < 8 && c >= count - 8) || (r >= count - 8 && c < 8);
   for (let r = 0; r < count; r++) for (let c = 0; c < count; c++) {
-    if (!qr.isDark(r, c)) continue;
+    if (!qr.isDark(r, c) || inEye(r, c, count)) continue;
     const x = ((c + margin) * u).toFixed(2), y = ((r + margin) * u).toFixed(2), w = u.toFixed(2);
-    if (curStyle === 'dots' && !inFinder(r, c))
+    if (curStyle === 'dots')
       s += `<circle cx="${(+x + u / 2).toFixed(2)}" cy="${(+y + u / 2).toFixed(2)}" r="${(u * 0.46).toFixed(2)}" ${fillAttr}/>`;
     else if (curStyle === 'rounded')
       s += `<rect x="${x}" y="${y}" width="${w}" height="${w}" rx="${(u * 0.28).toFixed(2)}" ${fillAttr}/>`;
     else
       s += `<rect x="${x}" y="${y}" width="${w}" height="${w}" ${fillAttr}/>`;
+  }
+  const bgFill = transp ? null : bg;
+  s += svgEye(off, off, u, fillAttr, bgFill);
+  s += svgEye(off + (count - 7) * u, off, u, fillAttr, bgFill);
+  s += svgEye(off, off + (count - 7) * u, u, fillAttr, bgFill);
+  return s;
+}
+
+function toSVG() {
+  const inner = qrSVGInner(1000); if (!inner) return null;
+  const S = 1000;
+  const frame = $('in-frame').value;
+  const fg = $('in-fg').value, bg = $('in-bg').value;
+  if (frame === 'none')
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}">${inner}</svg>`;
+  const pad = S * 0.055, labelH = S * 0.15, tagH = labelH * 0.8;
+  const W = S + pad * 2;
+  const H = frame === 'card' ? S + pad * 2 + labelH : frame === 'tag' ? S + pad * 2 + tagH : S + pad * 2;
+  const f2 = v => Math.round(v * 100) / 100;
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${f2(W)} ${f2(H)}">`;
+  s += `<rect width="${f2(W)}" height="${f2(H)}" rx="${f2(S * 0.045)}" fill="${bg}"/>`;
+  if (frame === 'card') {
+    s += `<g transform="translate(${f2(pad)},${f2(pad)})">${inner}</g>`;
+    s += `<text x="${f2(W / 2)}" y="${f2(pad + S + labelH * 0.68)}" font-family="'Segoe UI',sans-serif" font-weight="700" font-size="${f2(S * 0.075)}" fill="${fg}" text-anchor="middle" letter-spacing="${f2(S * 0.012)}">SCAN ME</text>`;
+  } else if (frame === 'tag') {
+    s += `<g transform="translate(${f2(pad)},${f2(pad + tagH)})">${inner}</g>`;
+    s += `<path d="M ${f2(S * 0.045)} 0 H ${f2(W - S * 0.045)} A ${f2(S * 0.045)} ${f2(S * 0.045)} 0 0 1 ${f2(W)} ${f2(S * 0.045)} V ${f2(tagH)} H 0 V ${f2(S * 0.045)} A ${f2(S * 0.045)} ${f2(S * 0.045)} 0 0 1 ${f2(S * 0.045)} 0 Z" fill="${fg}"/>`;
+    s += `<text x="${f2(W / 2)}" y="${f2(tagH * 0.68)}" font-family="'Segoe UI',sans-serif" font-weight="700" font-size="${f2(S * 0.055)}" fill="${bg}" text-anchor="middle">SCAN ME</text>`;
+  } else if (frame === 'bubble') {
+    s += `<g transform="translate(${f2(pad)},${f2(pad)})">${inner}</g>`;
+    const fs = S * 0.062, tw = S * 0.42;
+    s += `<rect x="${f2((W - tw) / 2)}" y="${f2(-fs * 0.2)}" width="${f2(tw)}" height="${f2(fs * 1.9)}" rx="${f2(fs * 0.95)}" fill="${fg}"/>`;
+    s += `<text x="${f2(W / 2)}" y="${f2(fs * 0.95)}" font-family="'Segoe UI',sans-serif" font-weight="700" font-size="${f2(fs)}" fill="${bg}" text-anchor="middle">SCAN ME</text>`;
   }
   return s + '</svg>';
 }
@@ -520,6 +696,56 @@ $('dl-svg').onclick = () => {
   const svg = toSVG(); if (!svg) return;
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
   dl(url, fname('.svg')); setTimeout(() => URL.revokeObjectURL(url), 5000);
+};
+function buildPDF(jpegBytes, w, h) {
+  const W = Math.round(w * 0.75), H = Math.round(h * 0.75);
+  const enc = new TextEncoder();
+  const contentStr = `q\n${W} 0 0 ${H} 0 0 cm\n/Im1 Do\nQ`;
+  const objs = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im1 4 0 R >> >> /Contents 5 0 R >>`,
+    `<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>`,
+    `<< /Length ${enc.encode(contentStr).length} >>`
+  ];
+  const parts = [enc.encode('%PDF-1.4\n')];
+  const offsets = [];
+  let off = parts[0].length;
+  for (let i = 0; i < objs.length; i++) {
+    offsets.push(off);
+    const head = enc.encode(`${i + 1} 0 obj\n${objs[i]}\n`);
+    let body;
+    if (i === 3) {
+      body = [head, enc.encode('stream\n'), jpegBytes, enc.encode('\nendstream\nendobj\n')];
+    } else if (i === 4) {
+      body = [head, enc.encode('stream\n'), enc.encode(contentStr), enc.encode('\nendstream\nendobj\n')];
+    } else {
+      body = [enc.encode(`${i + 1} 0 obj\n${objs[i]}\nendobj\n`)];
+    }
+    body.forEach(b => { parts.push(b); off += b.length; });
+  }
+  let xref = `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n`;
+  for (const o of offsets) xref += String(o).padStart(10, '0') + ' 00000 n \n';
+  xref += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${off}\n%%EOF`;
+  parts.push(enc.encode(xref));
+  const out = new Uint8Array(parts.reduce((a, b) => a + b.length, 0));
+  let p = 0; for (const t of parts) { out.set(t, p); p += t.length; }
+  return out;
+}
+$('dl-pdf').onclick = async () => {
+  if (!payload()) return;
+  const srcC = $('qr-canvas');
+  const c = document.createElement('canvas');
+  c.width = srcC.width; c.height = srcC.height;
+  const x = c.getContext('2d');
+  x.fillStyle = '#ffffff'; x.fillRect(0, 0, c.width, c.height);
+  x.drawImage(srcC, 0, 0);
+  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.93));
+  if (!blob) return;
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const pdf = buildPDF(bytes, c.width, c.height);
+  const url = URL.createObjectURL(new Blob([pdf], { type: 'application/pdf' }));
+  dl(url, fname('.pdf')); setTimeout(() => URL.revokeObjectURL(url), 5000);
 };
 $('cp-png').onclick = async () => {
   if (!payload()) return;
