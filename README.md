@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.svg" width="96" alt="EverQR logo">
+</p>
+
 # EverQR — Free Static QR Code Generator
 
 *Your QR. Your Style. No Expiry.*
