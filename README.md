@@ -6,6 +6,8 @@
 
 *Your QR. Your Style. No Expiry.*
 
+![EverQR preview](everqr-browser-mockup.png)
+
 🔗 **Live:** https://nuvishh.github.io/EverQR/
 
 Generate **fully static QR codes that never expire** — customize colors, gradients, module and eye styles, frames, and your own logo, then download as PNG, SVG, or PDF. 100% client-side: your data never leaves the browser.
