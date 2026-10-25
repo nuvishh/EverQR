@@ -101,6 +101,7 @@ footer a { color: #fecaca; text-decoration: none; }
     <div class="logo">◧ LinkGrid</div>
     <p class="tagline">Your QR. Your Style. <strong>No Expiry.</strong></p>
     <span class="badge">🔒 Your data never leaves this page — everything runs in your browser</span>
+    <div style="margin-top:14px"><button class="btn ghost" onclick="shareTool(this)" aria-label="Share this tool">↗ Share</button></div>
   </header>
 
   <div class="grid">
@@ -760,5 +761,22 @@ $('cp-png').onclick = async () => {
 render();
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0190c2acb1d3447681b44cb1c8fb3c0a"}'></script><!-- End Cloudflare Web Analytics -->
+<script>
+async function shareTool(btn){
+  var url = location.href, title = document.title;
+  var done = function(msg){ if(!btn) return; var old = btn.textContent; btn.textContent = msg; setTimeout(function(){ btn.textContent = old; }, 1600); };
+  if (navigator.share) {
+    try { await navigator.share({title: title, url: url}); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(url); done('Copied ✓'); return; }
+  catch (e) {}
+  var ta = document.createElement('textarea');
+  ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); done('Copied ✓'); } catch (e) {}
+  ta.remove();
+}
+</script>
 </body>
 </html>
