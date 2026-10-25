@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EverQR — Free QR Code Generator</title>
+<title>LinkGrid — Free QR Code Generator</title>
 <meta name="description" content="Generate fully static QR codes that never expire. Customize colors, styles, add your logo, download as PNG or SVG. 100% free, works offline.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◧</text></svg>">
 <style>
@@ -98,7 +98,7 @@ footer a { color: #fecaca; text-decoration: none; }
 <body>
 <div class="wrap">
   <header>
-    <div class="logo">◧ EverQR</div>
+    <div class="logo">◧ LinkGrid</div>
     <p class="tagline">Your QR. Your Style. <strong>No Expiry.</strong></p>
     <span class="badge">🔒 Your data never leaves this page — everything runs in your browser</span>
   </header>
@@ -254,7 +254,7 @@ footer a { color: #fecaca; text-decoration: none; }
       <div class="qrbox" id="qrbox"><canvas id="qr-canvas"></canvas></div>
       <div class="field" style="text-align:left;margin-bottom:0.8rem">
         <label>File name</label>
-        <input id="in-fname" value="everqr" placeholder="everqr" maxlength="60"
+        <input id="in-fname" value="linkgrid" placeholder="linkgrid" maxlength="60"
           style="width:100%;padding:0.7rem 0.9rem;border-radius:10px;border:1px solid var(--border);background:rgba(0,0,0,0.25);color:var(--text);font-size:0.92rem;font-family:inherit">
       </div>
       <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.6rem">💾 Save your QR code:</p>
@@ -271,12 +271,12 @@ footer a { color: #fecaca; text-decoration: none; }
   <div class="xlinks">
     <div class="t">More free tools by nuvish</div>
     <div class="row">
-      <a href="https://nuvishh.github.io/PixLite/" target="_blank" rel="noopener"><span class="ic">🗜️</span><span>PixLite<small>Image compressor</small></span></a>
+      <a href="https://nuvishh.github.io/SlimByte/" target="_blank" rel="noopener"><span class="ic">🗜️</span><span>SlimByte<small>Image optimizer</small></span></a>
       <a href="https://nuvishh.github.io/Beamo-Web/" target="_blank" rel="noopener"><span class="ic">⚡</span><span>Beamo Web<small>Share files browser-to-browser</small></span></a>
     </div>
   </div>
 
-  <footer>Made with ♥ by <a href="https://nuvishh.github.io/">nuvish</a> · EverQR is free forever</footer>
+  <footer>Made with ♥ by <a href="https://nuvishh.github.io/">nuvish</a> · LinkGrid is free forever</footer>
 </div>
 
 <script src="qrcode.min.js"></script>
@@ -682,8 +682,8 @@ function dl(url, name) {
   a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
 }
 function fname(ext) {
-  const v = ($('in-fname').value || 'everqr').trim().replace(/[^a-zA-Z0-9-_ ]/g, '').replace(/\s+/g, '-').slice(0, 60);
-  return (v || 'everqr') + ext;
+  const v = ($('in-fname').value || 'linkgrid').trim().replace(/[^a-zA-Z0-9-_ ]/g, '').replace(/\s+/g, '-').slice(0, 60);
+  return (v || 'linkgrid') + ext;
 }
 $('dl-png').onclick = () => {
   if (!payload()) return;

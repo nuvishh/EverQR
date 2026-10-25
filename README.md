@@ -1,14 +1,12 @@
 <p align="center">
-  <img src="logo.svg" width="96" alt="EverQR logo">
+  <img src="logo.svg" width="96" alt="LinkGrid logo">
 </p>
 
-# EverQR — Free Static QR Code Generator
+# LinkGrid — Free Static QR Code Generator
 
 *Your QR. Your Style. No Expiry.*
 
-![EverQR preview](everqr-browser-mockup.png)
-
-🔗 **Live:** https://nuvishh.github.io/EverQR/
+🔗 **Live:** https://nuvishh.github.io/LinkGrid/
 
 Generate **fully static QR codes that never expire** — customize colors, gradients, module and eye styles, frames, and your own logo, then download as PNG, SVG, or PDF. 100% client-side: your data never leaves the browser.
 
@@ -16,7 +14,7 @@ Generate **fully static QR codes that never expire** — customize colors, gradi
 
 Most online QR generators create **dynamic** QR codes — the QR points to *their* server, which redirects to your link. Stop paying (or the service shuts down) and your QR dies.
 
-EverQR generates **static** QR codes: your content is encoded *directly* into the QR image. No servers, no accounts, no redirects — nothing to expire. Ever.
+LinkGrid generates **static** QR codes: your content is encoded *directly* into the QR image. No servers, no accounts, no redirects — nothing to expire. Ever.
 
 ## Content types (9)
 
@@ -55,7 +53,7 @@ Single `index.html` + `qrcode.min.js` (qrcode-generator, MIT). Canvas rendering 
 
 ## More free tools by nuvish
 
-- 🗜️ **PixLite** — client-side image compressor — https://nuvishh.github.io/PixLite/
+- 🗜️ **SlimByte** — client-side image optimizer — https://nuvishh.github.io/SlimByte/
 - ⚡ **Beamo Web** — share files browser-to-browser — https://nuvishh.github.io/Beamo-Web/
 
 ## Host it
